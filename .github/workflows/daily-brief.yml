@@ -1,0 +1,68 @@
+name: daily-brief
+
+on:
+  schedule:
+    # 00:40 UTC = 07:40 giờ Việt Nam. GitHub hay trễ 5-30 phút nên push sẽ về khoảng 8h.
+    - cron: "40 0 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Chạy thử bằng dữ liệu mẫu, không gọi API, không gửi push"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-brief
+  cancel-in-progress: false
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - run: pip install -r scripts/requirements.txt
+
+      - name: Tạo bản tin
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+          MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+          MS_REFRESH_TOKEN: ${{ secrets.MS_REFRESH_TOKEN }}
+          MS_TENANT: ${{ vars.MS_TENANT }}
+        run: python scripts/build_brief.py
+
+      - name: Commit phần công khai (không gồm họp/email/task)
+        if: env.DRY_RUN != '1'
+        run: |
+          git config user.name "ngua-ml-bot"
+          git config user.email "ngua-ml-bot@users.noreply.github.com"
+          git add docs/brief/today.json data/state.json
+          git diff --staged --quiet || git commit -m "brief $(TZ=Asia/Ho_Chi_Minh date +%F)"
+          git push
+
+      - name: Chờ GitHub Pages cập nhật
+        if: env.DRY_RUN != '1'
+        run: sleep 75
+
+      - name: Gửi push
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          PUSH_SUBSCRIPTIONS: ${{ secrets.PUSH_SUBSCRIPTIONS }}
+        run: python scripts/send_push.py
