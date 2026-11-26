@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cài đặt · Bản tin Ngựa ml</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><div class="brand">⚙️ Cài đặt</div><div class="date"><a class="link" href="./">Quay lại bản tin</a></div></header>
+  <main class="stack">
+    <section class="card stack">
+      <h2>Bước 1 · Tạo khoá VAPID (làm 1 lần, trên máy tính)</h2>
+      <p class="muted">Khoá được tạo ngay trong trình duyệt của bạn, không gửi đi đâu.</p>
+      <button id="gen" class="btn secondary">Tạo khoá mới</button>
+      <label>Khoá công khai (dán vào <code>docs/config.js</code>)</label>
+      <textarea id="pub" readonly></textarea>
+      <label>Khoá riêng (lưu vào GitHub Secret <code>VAPID_PRIVATE_KEY</code>, đừng chia sẻ)</label>
+      <textarea id="priv" readonly></textarea>
+    </section>
+
+    <section class="card stack">
+      <h2>Bước 2 · Mã đăng ký thiết bị (làm trên điện thoại)</h2>
+      <p class="muted">Sau khi bấm "Bật thông báo" ở trang chính, mã đăng ký xuất hiện ở đây. Sao chép vào GitHub Secret <code>PUSH_SUBSCRIPTIONS</code>. Nhiều thiết bị thì gộp thành một mảng JSON.</p>
+      <button id="show" class="btn secondary">Hiện mã đăng ký của máy này</button>
+      <textarea id="sub" readonly></textarea>
+      <button id="copy" class="btn">Sao chép</button>
+    </section>
+
+    <section class="card stack">
+      <h2>Khoá công khai dự phòng</h2>
+      <p class="muted">Nếu chưa muốn sửa config.js, dán khoá công khai vào đây (chỉ lưu trên máy này).</p>
+      <input id="pubfallback" type="text" placeholder="Khoá công khai VAPID">
+      <button id="savepub" class="btn secondary">Lưu</button>
+    </section>
+  </main>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const fromB64url = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+
+    $("#gen").onclick = async () => {
+      const kp = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+      const jwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
+      const pub = new Uint8Array([4, ...fromB64url(jwk.x), ...fromB64url(jwk.y)]); // điểm không nén 65 byte
+      $("#pub").value = b64url(pub);
+      $("#priv").value = jwk.d; // 32 byte base64url, định dạng pywebpush nhận được
+    };
+    $("#show").onclick = () => { $("#sub").value = localStorage.getItem("push_sub") || "Chưa có. Hãy bật thông báo ở trang chính trên điện thoại trước."; };
+    $("#copy").onclick = async () => { await navigator.clipboard.writeText($("#sub").value); $("#copy").textContent = "Đã chép"; };
+    $("#savepub").onclick = () => { localStorage.setItem("vapid_pub", $("#pubfallback").value.trim()); $("#savepub").textContent = "Đã lưu"; };
+  </script>
+</body>
+</html>

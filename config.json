@@ -1,0 +1,41 @@
+{
+  "timezone": "Asia/Ho_Chi_Minh",
+  "app_url": "https://TEN-GITHUB.github.io/ban-tin-ngua/",
+  "push_contact": "mailto:you@example.com",
+  "news": {
+    "topics": [
+      "LCP (League of Legends Championship Pacific) và các đội Việt Nam",
+      "LoL esports quốc tế đang diễn ra (giải lớn, chuyển nhượng, patch)",
+      "Esports nói chung (VALORANT, các game có giải lớn)",
+      "Bóng đá (Việt Nam và các giải lớn quốc tế)",
+      "Thể thao khác đáng chú ý"
+    ],
+    "max_items": 8
+  },
+  "schedule": {
+    "focus": [
+      "LCP",
+      "Các trận LoL quốc tế đáng xem trong ngày",
+      "Bóng đá lớn trong ngày"
+    ],
+    "max_items": 8
+  },
+  "joke": {
+    "style": "ngắn gọn, vui, sạch, hơi ngố, hợp dân chơi game và làm content, không đả kích cá nhân"
+  },
+  "private": {
+    "enabled_sources": ["google_calendar", "gmail", "google_sheet", "outlook_calendar", "outlook_mail"],
+    "gmail_query": "is:unread newer_than:1d -category:promotions -category:social",
+    "max_items_each": 5,
+    "sheet": {
+      "spreadsheet_id": "",
+      "range": "Checklist!A1:L500",
+      "date_column": "Ngày",
+      "title_column": "Nội dung",
+      "status_column": "Trạng thái",
+      "done_values": ["done", "xong", "hoàn thành", "ok"],
+      "date_format": "%d/%m/%Y",
+      "look_ahead_days": 1
+    }
+  }
+}
